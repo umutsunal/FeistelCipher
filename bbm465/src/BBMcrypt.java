@@ -16,7 +16,7 @@ public class BBMcrypt {
 	
 	
 	//SUBSTITION BOX. IT IS STORED AS A 2-DIMENSIONAL ARRAY
-	static final String[][] substititionBox = {
+	static final String[][] substitution = {
 			{"0010","1100","0100","0001","0111","1010","1011","0110","1000","0101","0011","1111","1101","0000","1110","1001"},
 			{"1110","1011","0010","1100","0100","0111","1101","0001","0101","0000","1111","1010","0011","1001","1000","0110"},
 			{"0100","0010","0001","1011","1010","1101","0111","1000","1111","1001","1100","0101","0110","0011","0000","1110"},
@@ -101,7 +101,7 @@ public class BBMcrypt {
 		for(int i=0; i<totalRounds; i++) {
 			tempString = previousKey;	//96 bitlik
 			tempString = leftCircularShift(tempString);	//96 bit
-			previousKey = tempString;	//96 bit, shiftlenmiþ
+			previousKey = tempString;	//96 bit, shiftlenmiÅŸ
 			System.out.println(tempString);
 			//permuted choice
 			char[] tempCharArray = tempString.toCharArray();
@@ -127,11 +127,81 @@ public class BBMcrypt {
 		return finalKeyArray;
 	}
 	
-	//SCRAMBLE FUNCTION (NOT FINISHED YET)
-	public static String scrambleFunction(String rightSubText, String subKey) {
-		String result = "";
+	//XOR FUNCTION
+    static String xorFunction(String firstString, String secondString, int stringSize){ 
+    String resultString = ""; 
+          
+        // Loop to iterate over the 
+        // Binary Strings 
+        for (int i = 0; i < stringSize; i++) 
+        { 
+            // If the Character matches 
+            if (firstString.charAt(i) == secondString.charAt(i)) 
+            	resultString += "0"; 
+            else
+            	resultString += "1"; 
+        } 
+        return resultString; 
+    } 
+	
+    //SUBSTITUTION BOX FUNCTION
+    public static String[] substitutionBoxFunction(String[] xORedArray, String[][] substitutionBox) {
+    	String[] resultArray = new String[12];
+    	String tempString, outerBits, innerBits;
+    	tempString = outerBits = innerBits = "";
+    	
+    	for(int i=0;i<12;i++) {
+    		tempString = xORedArray[i];
+    		
+    		outerBits = outerBits.concat(String.valueOf(tempString.charAt(0))).concat(String.valueOf(tempString.charAt(5)));
+    		innerBits = innerBits.concat(String.valueOf(tempString.charAt(1))).concat(String.valueOf(tempString.charAt(2))).concat(String.valueOf(tempString.charAt(3))).concat(String.valueOf(tempString.charAt(4)));
+    		
+    		resultArray[i] = substitutionBox[Integer.parseInt(outerBits, 2)][Integer.parseInt(innerBits, 2)];
+    	}
+    	return resultArray;
+    }
+    
+    //PERMUTATION FUNCTION FOR SCRAMBLE FUNCTION
+    public static String permutationFunction(String substitutedString) {
+    	char tempChar;
+    	
+    	char[] charArray = substitutedString.toCharArray();
+    	
+    	for(int i = 0; i < 24; i++) {
+    		tempChar = charArray[2*i];
+    		charArray[2*i] = charArray[2*i+1];
+    		charArray[2*i+1] = tempChar;
+    	}
+    	
+    	String resultString = String.valueOf(charArray);
+    	return resultString;
+    }
+    
+    
+	//SCRAMBLE FUNCTION (FINISHED BUT NOT TESTED)
+	public static String scrambleFunction(String rightSubText, String subKey, String[][] substitution) {
 		
-		return result;
+		String xorResult = xorFunction(rightSubText, subKey, blockSize/2);
+		
+		String[] xORedArray = new String[12];
+		
+		for(int i=0;i<8;i++) {
+			xORedArray[i] = xorResult.substring(i*6,(i+1)*6);
+		}
+		
+		for(int j = 0; j<4; j++) {
+			xORedArray[j+8] = xorFunction(xORedArray[j], xORedArray[j*2], xORedArray[j*2+1].length());
+		}
+		
+		//NOW USE SUBSTITUTION BOX ON XORED ARRAY(12 ELEMENTS OF 6 BITS)
+		String[] substitutedArray = substitutionBoxFunction(xORedArray,substitution);
+		String substitutedString = "";
+		for(int k = 0; k<12;k++) {
+			substitutedString = substitutedString.concat(substitutedArray[k]);
+		}
+		//NOW USE PERMUTATION FUNCTION ON SUBSTITUTED STRING(48 BITS)
+		String resultString = permutationFunction(substitutedString);	
+		return resultString;
 	}
 	
 	
@@ -273,13 +343,7 @@ public class BBMcrypt {
 	    }*/
 	    
 	    
-	    System.out.println(substititionBox[0][2]);
-	    
-	    
-	    
-	    
-	    
-	    
+	    scrambleFunction("100101111001010000100101011001101011111101000010","011001001100010010110001011100100010111000000000",substitution);		 
 	    
 		
 		
