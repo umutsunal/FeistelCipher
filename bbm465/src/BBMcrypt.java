@@ -1,9 +1,11 @@
 import java.util.*;  
 
 import java.util.Base64;
-
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
 
 
 public class BBMcrypt {
@@ -70,6 +72,17 @@ public class BBMcrypt {
 		
 		return inputFileString;
 	}	//end of readKeyFile method	
+	//********************************************************
+	
+	//METHOD TO WRITE TO FILE***********************************
+	public static void writeToFile(String filename, String stringToWrite) throws IOException {
+		File outputFile = new File(filename);
+	
+		BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile));
+	    writer.write(stringToWrite);
+		    
+		writer.close();
+	}
 	//********************************************************
 	
 	//LEFT CIRCULAR SHIFT FOR SUBKEY GENERATION***************
@@ -398,7 +411,7 @@ public class BBMcrypt {
 	}	
 	
 	
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 		
 		//commandLine: given command line argument
 		//keyTxt: key filename
@@ -414,32 +427,26 @@ public class BBMcrypt {
 		String actionType="none";
 		String modeType="none";
 		
-		Scanner sc=new Scanner(System.in);  
-		
-		System.out.println("Enter the command line arguments:");
-		commandLine= sc.nextLine();
-		
-		String[] commandLineArray = commandLine.split(" ", 11);
-        
-		for (int i = 0; i < commandLineArray.length; i++) {	// for loop to read the command line arguments
+
+		for (int i = 0; i<args.length; i++) {	// for loop to read the command line arguments
 			
-            if(commandLineArray[i].equals("enc") || commandLineArray[i].equals("dec")) {
-            	actionType = commandLineArray[i];
+            if(args[i].equals("enc") || args[i].equals("dec")) {
+            	actionType = args[i];
             }
-            else if(commandLineArray[i].equals("-K")) {
-            	keyTxt = commandLineArray[i+1];
+            else if(args[i].equals("-K")) {
+            	keyTxt = args[i+1];
             }
-            else if(commandLineArray[i].equals("-I")) {
-            	inputTxt = commandLineArray[i+1];
+            else if(args[i].equals("-I")) {
+            	inputTxt = args[i+1];
             }
-            else if(commandLineArray[i].equals("-O")) {
-            	outputTxt = commandLineArray[i+1];
+            else if(args[i].equals("-O")) {
+            	outputTxt = args[i+1];
             }            
-            else if(commandLineArray[i].equals("-M")) {
-            	modeType = commandLineArray[i+1];
+            else if(args[i].equals("-M")) {
+            	modeType = args[i+1];
             }             
                   
-        }	//end for loop to read the command line arguments
+        }	//end for loop to read the command line arguments		
 		
 		//ARGUMENT LINE COMMAND READING IS FINISHED.
 		//STARTING TO READ THE KEY AND INPUT FILES
@@ -480,33 +487,25 @@ public class BBMcrypt {
 	    
 	    if(actionType.equals("enc") && modeType.equals("ECB")) {	
 	    	finalString = ECBEncryption(inputText, subKeyArray);
-	    	System.out.println("FINAL STRING FOR ECB ENCRYPTION:");
-	    	System.out.println(finalString);
 	    }
 	    else if(actionType.equals("dec") && modeType.equals("ECB")) {	
 	    	finalString = ECBDecryption(inputText, subKeyArray);
-	    	System.out.println("FINAL STRING FOR ECB DECRYPTION:");
-	    	System.out.println(finalString);
 	    }
 	    else if(actionType.equals("enc") && modeType.equals("CBC")) {	
 	    	finalString = CBCEncryption(inputText, subKeyArray);
-	    	System.out.println("FINAL STRING FOR CBC ENCRYPTION:");
-	    	System.out.println(finalString);
 	    }	    
 	    else if(actionType.equals("dec") && modeType.equals("CBC")) {
 	    	finalString = CBCDecryption(inputText, subKeyArray);
-	    	System.out.println("FINAL STRING FOR CBC DECRYPTION:");
-	    	System.out.println(finalString);
 	    }
 	    else if(actionType.equals("enc") && modeType.equals("OFB")) {	
 	    	finalString = OFBEncryption(inputText, subKeyArray);
-	    	System.out.println("FINAL STRING FOR OFB ENCRYPTION:");
-	    	System.out.println(finalString);
 	    }	    
 	    else if(actionType.equals("dec") && modeType.equals("OFB")) {
 	    	finalString = OFBDecryption(inputText, subKeyArray);
-	    	System.out.println("FINAL STRING FOR OFB DECRYPTION:");
-	    	System.out.println(finalString);
-	    }	    	    	
+	    }
+	    
+	    //WRITE THE FINAL STRING TO OUTPUT FILE
+	    writeToFile(outputTxt, finalString);
+	    
 	}	//end of main method
 }	//end of BBMcrypt class
