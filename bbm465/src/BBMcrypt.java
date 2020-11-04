@@ -2,8 +2,8 @@ import java.util.*;
 
 import java.util.Base64;
 
-import java.io.File;  // Import the File class
-import java.io.FileNotFoundException;  // Import this class to handle errors
+import java.io.File;
+import java.io.FileNotFoundException;
 
 
 public class BBMcrypt {
@@ -72,7 +72,6 @@ public class BBMcrypt {
 	}	//end of readKeyFile method	
 	//********************************************************
 	
-	
 	//LEFT CIRCULAR SHIFT FOR SUBKEY GENERATION***************
 	public static String leftCircularShift(String keyString) {
 		
@@ -90,7 +89,6 @@ public class BBMcrypt {
 	}
 	//********************************************************
 	
-	
 	//SUBKEY GENERATION FUNCTION******************************
 	public static String[] subkeyGeneration(String keyString, int totalRounds) {
 		String[] finalKeyArray = new String[10];
@@ -100,10 +98,9 @@ public class BBMcrypt {
 		String finalTempString = "";
 		
 		for(int i=0; i<totalRounds; i++) {
-			tempString = previousKey;	//96 bitlik
-			tempString = leftCircularShift(tempString);	//96 bit
-			previousKey = tempString;	//96 bit, shiftlenmiş
-			//System.out.println(tempString);
+			tempString = previousKey;
+			tempString = leftCircularShift(tempString);
+			previousKey = tempString;
 			//permuted choice
 			char[] tempCharArray = tempString.toCharArray();
 			
@@ -130,11 +127,8 @@ public class BBMcrypt {
     static String xorFunction(String firstString, String secondString, int stringSize){ 
     String resultString = ""; 
           
-        // Loop to iterate over the 
-        // Binary Strings 
         for (int i = 0; i < stringSize; i++) 
         { 
-            // If the Character matches 
             if (firstString.charAt(i) == secondString.charAt(i)) 
             	resultString += "0"; 
             else
@@ -269,13 +263,11 @@ public class BBMcrypt {
 		}
 		else {	//if string length>96, there are more than 1 block 
 			int numberOfBlocks = originalText.length()/96;
-			System.out.println("numofblocks: " + numberOfBlocks);
 		
 			String tempStringBlock = "";
 			
 			for(int i=0;i<numberOfBlocks;i++) {
 				tempStringBlock = feistelCipherEncryption(originalText.substring(i*blockSize, (i+1)*blockSize), subKeyArray);
-				System.out.println(tempStringBlock.length());
 				finalText = finalText.concat(tempStringBlock);				
 			}
 		}
@@ -291,13 +283,11 @@ public class BBMcrypt {
 		}
 		else {	//if string length>96, there are more than 1 block 
 			int numberOfBlocks = cipherText.length()/96;
-			System.out.println("numofblocks: " + numberOfBlocks);
 		
 			String tempStringBlock = "";
 			
 			for(int i=0;i<numberOfBlocks;i++) {
 				tempStringBlock = feistelCipherDecryption(cipherText.substring(i*blockSize, (i+1)*blockSize), subKeyArray);
-				System.out.println(tempStringBlock.length());
 				finalText = finalText.concat(tempStringBlock);				
 			}
 		}
@@ -313,7 +303,6 @@ public class BBMcrypt {
 		}
 		else {	//if string length>96, there are more than 1 block 
 			int numberOfBlocks = originalText.length()/96;
-			System.out.println("numofblocks: " + numberOfBlocks);
 		
 			String[] ciphertextArray = new String[numberOfBlocks+1];
 			ciphertextArray[0] = initializationVector;
@@ -334,7 +323,6 @@ public class BBMcrypt {
 		}
 		else {	//if string length>96, there are more than 1 block 
 			int numberOfBlocks = cipherText.length()/96;
-			System.out.println("numofblocks: " + numberOfBlocks);
 		
 			String[] ciphertextArray = new String[numberOfBlocks+1];
 			ciphertextArray[0] = initializationVector;
@@ -345,7 +333,6 @@ public class BBMcrypt {
 			for (int x = 1; x<numberOfBlocks+1;x++) {
 				tempCiphertext = cipherText.substring((x-1)*blockSize, x*blockSize);
 				ciphertextArray[x]=tempCiphertext;
-				System.out.println("tempciphertext: " + tempCiphertext);
 			}
 			
 			
@@ -357,16 +344,55 @@ public class BBMcrypt {
 		return finalText;
 	}
 	
-	public static String OFCEncryption(String originalText, String[] subKeyArray) {
+	public static String OFBEncryption(String originalText, String[] subKeyArray) {
 		String finalText = "";
+		String tempString = "";
 		
-		
+		if(originalText.length()==96) {
+			finalText = xorFunction(feistelCipherEncryption(initializationVector, subKeyArray), originalText, blockSize);
+		}
+		else {
+			int numberOfBlocks = originalText.length()/96;
+			
+			String[] xArray = new String[numberOfBlocks];
+			xArray[0] = initializationVector;
+			
+			for(int i=1; i<numberOfBlocks; i++) {	//find the x values before xor operations
+				xArray[i] = feistelCipherEncryption(xArray[i-1], subKeyArray);
+			}
+			
+			for(int i=0; i<numberOfBlocks; i++) {
+				tempString = xorFunction(feistelCipherEncryption(xArray[i], subKeyArray), originalText.substring(blockSize*i,blockSize*(i+1)), blockSize);
+				finalText = finalText.concat(tempString);
+			}
+			
+		}
 		return finalText;
 	}
 	
-	public static String OFCDecryption(String cipherText, String[] subKeyArray) {
+	public static String OFBDecryption(String cipherText, String[] subKeyArray) {
 		String finalText = "";
+		String tempString = "";
 		
+		if(cipherText.length()==96) {
+			finalText = xorFunction(cipherText, feistelCipherEncryption(initializationVector, subKeyArray),  blockSize);
+		}
+		else {
+			int numberOfBlocks = cipherText.length()/96;
+			
+			String[] xArray = new String[numberOfBlocks];
+			xArray[0] = initializationVector;
+			
+			for(int i=1; i<numberOfBlocks; i++) {	//find the x values before xor operations
+				xArray[i] = feistelCipherEncryption(xArray[i-1], subKeyArray);
+			}
+			
+			for(int i=0; i<numberOfBlocks; i++) {
+				tempString = xorFunction(feistelCipherEncryption(xArray[i], subKeyArray), cipherText.substring(blockSize*i,blockSize*(i+1)), blockSize);
+				finalText = finalText.concat(tempString);
+			}
+			
+		}		
 		
 		return finalText;
 	}	
@@ -393,9 +419,6 @@ public class BBMcrypt {
 		System.out.println("Enter the command line arguments:");
 		commandLine= sc.nextLine();
 		
-		System.out.println(commandLine);
-		
-		
 		String[] commandLineArray = commandLine.split(" ", 11);
         
 		for (int i = 0; i < commandLineArray.length; i++) {	// for loop to read the command line arguments
@@ -418,14 +441,6 @@ public class BBMcrypt {
                   
         }	//end for loop to read the command line arguments
 		
-		System.out.println(actionType);
-		System.out.println(keyTxt);
-		System.out.println(inputTxt);
-		System.out.println(outputTxt);
-		System.out.println(modeType);
-		
-		System.out.println(keySize);
-		
 		//ARGUMENT LINE COMMAND READING IS FINISHED.
 		//STARTING TO READ THE KEY AND INPUT FILES
 		
@@ -434,13 +449,11 @@ public class BBMcrypt {
 		//READING THE KEY FILE
 	    String decodedKeyString = readKeyFile(keyTxt);
 	    
-	    System.out.println("decoded string: " + decodedKeyString);
 	    //KEY FILE IS READ AND STORED INTO decodedString VARIABLE
 	    
 	    
 	    //READING THE BINARY INPUT FILE	    
 	    String inputText = readInputFile(inputTxt);
-	    System.out.println("input text: " + inputText);
 	    
 	    
 	    //**************************************************************************//
@@ -465,33 +478,35 @@ public class BBMcrypt {
 	    
 	    String finalString = "";
 	    
-	    if(actionType.equals("enc") && modeType.equals("ECB")) {
-	    	System.out.println("*********");	
+	    if(actionType.equals("enc") && modeType.equals("ECB")) {	
 	    	finalString = ECBEncryption(inputText, subKeyArray);
 	    	System.out.println("FINAL STRING FOR ECB ENCRYPTION:");
 	    	System.out.println(finalString);
 	    }
-	    else if(actionType.equals("dec") && modeType.equals("ECB")) {
-	    	System.out.println("*********");	
+	    else if(actionType.equals("dec") && modeType.equals("ECB")) {	
 	    	finalString = ECBDecryption(inputText, subKeyArray);
 	    	System.out.println("FINAL STRING FOR ECB DECRYPTION:");
 	    	System.out.println(finalString);
 	    }
-	    else if(actionType.equals("enc") && modeType.equals("CBC")) {
-	    	System.out.println("*********");	
+	    else if(actionType.equals("enc") && modeType.equals("CBC")) {	
 	    	finalString = CBCEncryption(inputText, subKeyArray);
 	    	System.out.println("FINAL STRING FOR CBC ENCRYPTION:");
 	    	System.out.println(finalString);
 	    }	    
 	    else if(actionType.equals("dec") && modeType.equals("CBC")) {
-	    	System.out.println("*********");	
 	    	finalString = CBCDecryption(inputText, subKeyArray);
 	    	System.out.println("FINAL STRING FOR CBC DECRYPTION:");
 	    	System.out.println(finalString);
-	    }		    
-	    //scrambleFunction("100101111001010000100101011001101011111101000010","011001001100010010110001011100100010111000000000",substitution);		 
-	    
-		
-		
+	    }
+	    else if(actionType.equals("enc") && modeType.equals("OFB")) {	
+	    	finalString = OFBEncryption(inputText, subKeyArray);
+	    	System.out.println("FINAL STRING FOR OFB ENCRYPTION:");
+	    	System.out.println(finalString);
+	    }	    
+	    else if(actionType.equals("dec") && modeType.equals("OFB")) {
+	    	finalString = OFBDecryption(inputText, subKeyArray);
+	    	System.out.println("FINAL STRING FOR OFB DECRYPTION:");
+	    	System.out.println(finalString);
+	    }	    	    	
 	}	//end of main method
 }	//end of BBMcrypt class
