@@ -1,4 +1,3 @@
-//import java.nio.charset.StandardCharsets;
 import java.util.*;  
 
 import java.util.Base64;
@@ -35,7 +34,6 @@ public class BBMcrypt {
 		    
 		    sc.useDelimiter("\\Z"); 
 		    keyFileString = sc.next();
-		    System.out.println(keyFileString); 
 	      } 
 	    catch (FileNotFoundException e) {
 	        System.out.println("An error occurred.");
@@ -44,7 +42,6 @@ public class BBMcrypt {
 	    
 		byte[] decoded = Base64.getDecoder().decode(keyFileString);
 	    String decodedString = new String(decoded);
-	    System.out.println(decodedString);
 		
 		return decodedString;
 	}	//end of readKeyFile method
@@ -58,7 +55,6 @@ public class BBMcrypt {
 		    
 		    sc.useDelimiter("\\Z"); 
 		    inputFileString = sc.next();
-		    System.out.println(inputFileString); 
 	      } 
 	    catch (FileNotFoundException e) {
 	        System.out.println("An error occurred.");
@@ -121,7 +117,6 @@ public class BBMcrypt {
 					finalTempString = finalTempString.concat(String.valueOf(tempCharArray[j]));
 				}				
 			}
-			System.out.println(i + "subkey: " + finalTempString);
 		finalKeyArray[i] = finalTempString;
 		finalTempString = "";
 		}
@@ -230,7 +225,6 @@ public class BBMcrypt {
 		for (int i=1; i<11; i++) {
 			leftBlocksArray[i] = rightBlocksArray[i-1];
 			rightBlocksArray[i] = xorFunction(leftBlocksArray[i-1], scrambleFunction(rightBlocksArray[i-1], subKeyArray[i-1], substitution), 48); 	
-			System.out.println(i-1 + "scramble function " + scrambleFunction(rightBlocksArray[i-1], subKeyArray[i-1], substitution));
 		
 		}
 		
@@ -258,8 +252,6 @@ public class BBMcrypt {
 			rightBlocksArray[i] = leftBlocksArray[i+1];
 			
 			leftBlocksArray[i] = xorFunction(rightBlocksArray[i+1], scrambleFunction(leftBlocksArray[i+1], subKeyArray[i], substitution), 48); 	
-			System.out.println(i + "scramble function " + scrambleFunction(leftBlocksArray[i+1], subKeyArray[i], substitution));
-		
 		}
 		
 		decryptedBlock = decryptedBlock.concat(leftBlocksArray[0]).concat(rightBlocksArray[0]);
@@ -316,25 +308,52 @@ public class BBMcrypt {
 		String finalText = "";
 		
 		if(originalText.length()==96) {	//if string length<=96, there are only 1 block
-			finalText = feistelCipherEncryption(originalText, subKeyArray);
+			String xORedString = xorFunction(originalText, initializationVector, blockSize);			
+			finalText = feistelCipherEncryption(xORedString, subKeyArray);
 		}
 		else {	//if string length>96, there are more than 1 block 
 			int numberOfBlocks = originalText.length()/96;
 			System.out.println("numofblocks: " + numberOfBlocks);
 		
-			String tempStringBlock = "";
+			String[] ciphertextArray = new String[numberOfBlocks+1];
+			ciphertextArray[0] = initializationVector;
 			
-
+			for(int i = 1; i < numberOfBlocks+1; i++) {
+				ciphertextArray[i] = feistelCipherEncryption(xorFunction(originalText.substring((i-1)*blockSize, (i)*blockSize), ciphertextArray[i-1], blockSize), subKeyArray);
+				finalText = finalText.concat(ciphertextArray[i]);
+			}
 		}
-		
-		
 		return finalText;
 	}
 	
 	public static String CBCDecryption(String cipherText, String[] subKeyArray) {
 		String finalText = "";
 		
+		if(cipherText.length()==96) {	//if string length<=96, there are only 1 block
+			finalText = xorFunction(initializationVector, feistelCipherDecryption(cipherText, subKeyArray), blockSize);
+		}
+		else {	//if string length>96, there are more than 1 block 
+			int numberOfBlocks = cipherText.length()/96;
+			System.out.println("numofblocks: " + numberOfBlocks);
 		
+			String[] ciphertextArray = new String[numberOfBlocks+1];
+			ciphertextArray[0] = initializationVector;
+			String tempCiphertext = "";
+			
+			//String[] originaltextArray = new String[numberofBlocks];
+			
+			for (int x = 1; x<numberOfBlocks+1;x++) {
+				tempCiphertext = cipherText.substring((x-1)*blockSize, x*blockSize);
+				ciphertextArray[x]=tempCiphertext;
+				System.out.println("tempciphertext: " + tempCiphertext);
+			}
+			
+			
+			for(int i = 1; i < numberOfBlocks+1; i++) {
+				//ciphertextArray[i] = feistelCipherEncryption(xorFunction(cipherText.substring((i-1)*blockSize, (i)*blockSize), ciphertextArray[i-1], blockSize), subKeyArray);
+				finalText = finalText.concat(xorFunction(ciphertextArray[i-1], feistelCipherDecryption(ciphertextArray[i], subKeyArray), blockSize));
+			}
+		}				
 		return finalText;
 	}
 	
@@ -458,8 +477,18 @@ public class BBMcrypt {
 	    	System.out.println("FINAL STRING FOR ECB DECRYPTION:");
 	    	System.out.println(finalString);
 	    }
-	    
-	    
+	    else if(actionType.equals("enc") && modeType.equals("CBC")) {
+	    	System.out.println("*********");	
+	    	finalString = CBCEncryption(inputText, subKeyArray);
+	    	System.out.println("FINAL STRING FOR CBC ENCRYPTION:");
+	    	System.out.println(finalString);
+	    }	    
+	    else if(actionType.equals("dec") && modeType.equals("CBC")) {
+	    	System.out.println("*********");	
+	    	finalString = CBCDecryption(inputText, subKeyArray);
+	    	System.out.println("FINAL STRING FOR CBC DECRYPTION:");
+	    	System.out.println(finalString);
+	    }		    
 	    //scrambleFunction("100101111001010000100101011001101011111101000010","011001001100010010110001011100100010111000000000",substitution);		 
 	    
 		
